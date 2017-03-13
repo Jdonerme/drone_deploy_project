@@ -3,6 +3,9 @@ import zbar
 import numpy as np
 from PIL import Image
 import math
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
 
 # Camera specifications for an Iphone 6
 fx=1229
@@ -10,9 +13,8 @@ cx=360
 fy=1153
 cy=640
 
-# We know our QR squares real life length
+# The length of the pattern
 QR_LENGTH = 8.8 # cm
-
 
 """ Given camera specifications, calculate the camera matrix.
 
@@ -39,55 +41,86 @@ def calculate_camera_matrix(fx, cx, fy, cy):
     Locates the corners of a QR code in an image.
 
     Locates the corners using zbar. The order of the corners will be the same
-    for the same QR code even if the image is rotated.
+    for the same QR code even if the image is rotated. If the QR code can not
+    be detected, None is returned.
 
     Args: 
         img: the name of the image to search with
     returns:
         locs: 2D numpy array containing the 4 corners
-"""
+
+    """
 def get_corner_locs(img):
-    # obtain image data
-    image = cv2.imread(img)
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY,dstCn=0)
-    pil = Image.fromarray(gray)
-    width, height = pil.size
-    raw = pil.tobytes()
+    try:
+        # obtain image data
+        image = cv2.imread(img)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY,dstCn=0)
+        pil = Image.fromarray(gray)
+        width, height = pil.size
+        raw = pil.tobytes()
 
-    # wrap image data
-    image = zbar.Image(width, height, 'Y800', raw)
+        # wrap image data
+        image = zbar.Image(width, height, 'Y800', raw)
 
-    # scan the image for barcodes
-    scanner.scan(image)
+        # scan the image for barcodes
+        scanner.scan(image)
 
-    locs = []
-    # extract results
-    for symbol in image:
-        locs.append(np.array(symbol.location, dtype='float32'))
-    return np.array(locs)[0]
-
+        locs = []
+        # extract results
+        for symbol in image:
+            locs.append(np.array(symbol.location, dtype='float32'))
+        return np.array(locs)[0]
+    except:
+        return None
 
 
 """  Displays a visualzation of camera positon based on the rotation
      vector and translation vector
 
     Args: 
+        img: the name of the image
         rvec: rotation vector of the camera
         tvec: translation vector of the camera
     
 
         """
+def generate_visualization(img, rotvec, tvec):
+    # If our Z coordinate will be negative, we need to reverse the vector
+    # because all photos are taken from above.
+    if rotvec[2] < 0:
+        rvec = -1 * rotvec
+    else:
+        rvec = rotvec
 
-def generate_visualization(rvec, tvec):
-    pass
+    xs = [rvec[0] * tvec[0]]
+    ys = [rvec[1] * tvec[1]]
+    zs = [rvec[2] * tvec[2]]
 
-    """ This program locates the QR code in all images, and compares their
-        orientation with the orientatino of the pattern to detect camera 
-        rotation and placement.
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.scatter(xs, ys, zs=zs, label="camera")
+    ax.scatter([0],[0], label="Image")
+    
+    ax.set_xlabel('x distance (cm)')
+    ax.set_ylabel('y distance (cm)')
+    ax.set_zlabel(' Height (cm)')
+    plt.legend(loc='best')
+    title = "Camera location in " + img
+    plt.title(title)
+    plt.show()
 
-        """
+
+""" This program locates the QR code in all images, and compares their
+    orientation with the orientation of the pattern to detect camera 
+    location and visualize it.
+
+    """
+
 if __name__ == "__main__" :
-    images = ["IMG_6725.jpg", "IMG_6722.jpg"]
+    images = ["IMG_67"] * 9
+    for i in range(9):
+        images[i] += str(i + 19) +".jpg"
+
     cam_matrix = calculate_camera_matrix(fx, cx, fy, cy)
     # create a reader
     scanner = zbar.ImageScanner()
@@ -113,9 +146,14 @@ if __name__ == "__main__" :
     for img in images:
         # get the location of the corners
         locs = get_corner_locs(img)
-        print locs
-        
-        _, rvec, tvec = cv2.solvePnP(objp, locs, cam_matrix, None)
-        generate_visualization(rvec, tvec)
+        if locs is None:
+            print "QR code could not be located in img " + img
+
+        else:
+            success, rvec, tvec = cv2.solvePnP(objp, locs, cam_matrix, None)
+            if success:
+                generate_visualization(img, rvec, tvec)   
+            else:
+                print "No visualization able to be generated for img: " + img
         
       

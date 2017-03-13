@@ -100,6 +100,10 @@ def generate_visualization(img, rotvec, tvec):
     ax = fig.add_subplot(111, projection='3d')
     ax.scatter(xs, ys, zs=zs, label="camera")
     ax.scatter([0],[0], label="Image")
+
+    l = 5 # to scale the arrows
+    ax.quiver(xs[0], ys[0], zs[0], \
+        -rvec[0] * l, - rvec[1] * l,  - rvec[2] * l, arrow_length_ratio=0.1)
     
     ax.set_xlabel('x distance (cm)')
     ax.set_ylabel('y distance (cm)')

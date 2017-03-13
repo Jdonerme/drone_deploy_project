@@ -9,8 +9,6 @@ from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.cbook import get_sample_data
 from matplotlib._png import read_png
 
-
-
 # Camera specifications for an Iphone 6
 fx=1229
 cx=360
@@ -102,8 +100,8 @@ def generate_visualization(img_name, rotvec, tvec):
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
-    ax.scatter(xs, ys, zs=zs, label="camera")
-    ax.scatter([0],[0], label="Image")
+    ax.scatter(xs, ys, zs=zs, label="Camera")
+    #ax.scatter([0],[0], label="Image")
 
     # plot the vector of where there camera points
     l = 5 # to scale the arrows
@@ -114,8 +112,7 @@ def generate_visualization(img_name, rotvec, tvec):
     fn = get_sample_data("pattern.png", asfileobj=False)
     img = read_png(fn)
     x, y = np.mgrid[-(QR_LENGTH) / 2.:(QR_LENGTH) / 2., -(QR_LENGTH) / 2.:(QR_LENGTH) / 2.]
-    ax.plot_surface(x, y, 0, rstride=2, cstride=2,
-                facecolors=img)
+    ax.plot_surface(x, y, 0, rstride=2, cstride=2)
    
     ax.set_xlabel('x distance (cm)')
     ax.set_ylabel('y distance (cm)')

@@ -1,10 +1,14 @@
 import cv2
 import zbar
 import numpy as np
+from scipy import misc
 from PIL import Image
 import math
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from matplotlib.cbook import get_sample_data
+from matplotlib._png import read_png
+
 
 
 # Camera specifications for an Iphone 6
@@ -84,7 +88,7 @@ def get_corner_locs(img):
     
 
         """
-def generate_visualization(img, rotvec, tvec):
+def generate_visualization(img_name, rotvec, tvec):
     # If our Z coordinate will be negative, we need to reverse the vector
     # because all photos are taken from above.
     if rotvec[2] < 0:
@@ -101,15 +105,23 @@ def generate_visualization(img, rotvec, tvec):
     ax.scatter(xs, ys, zs=zs, label="camera")
     ax.scatter([0],[0], label="Image")
 
+    # plot the vector of where there camera points
     l = 5 # to scale the arrows
     ax.quiver(xs[0], ys[0], zs[0], \
         -rvec[0] * l, - rvec[1] * l,  - rvec[2] * l, arrow_length_ratio=0.1)
-    
+
+    # try to add the image of the QR code to the graph
+    fn = get_sample_data("pattern.png", asfileobj=False)
+    img = read_png(fn)
+    x, y = np.mgrid[-(QR_LENGTH) / 2.:(QR_LENGTH) / 2., -(QR_LENGTH) / 2.:(QR_LENGTH) / 2.]
+    ax.plot_surface(x, y, 0, rstride=2, cstride=2,
+                facecolors=img)
+   
     ax.set_xlabel('x distance (cm)')
     ax.set_ylabel('y distance (cm)')
     ax.set_zlabel(' Height (cm)')
     plt.legend(loc='best')
-    title = "Camera location in " + img
+    title = "Camera location in " + img_name
     plt.title(title)
     plt.show()
 
@@ -145,14 +157,12 @@ if __name__ == "__main__" :
     # make 3D space 3 Dimensional by assuming Z component is 0
     objp = np.zeros((4,3))
     objp[:,:-1] = scale_corners
-    #objp =scale_corners
 
     for img in images:
         # get the location of the corners
         locs = get_corner_locs(img)
         if locs is None:
             print "QR code could not be located in img " + img
-
         else:
             success, rvec, tvec = cv2.solvePnP(objp, locs, cam_matrix, None)
             if success:
